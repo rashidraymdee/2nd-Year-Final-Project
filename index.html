@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#0a0d14',
+                            card: 'rgba(16, 24, 39, 0.75)',
+                            border: '#1f293d',
+                            neonBlue: '#00f0ff',
+                            neonPink: '#ff007f',
+                            neonGreen: '#00ff66',
+                            neonPurple: '#a855f7',
+                            neonYellow: '#ffe600'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Fira Code', 'Monaco', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0a0d14;
+            color: #f3f4f6;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(0, 240, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(255, 0, 127, 0.05) 0%, transparent 40%);
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 240, 255, 0.15);
+        }
+        .filter-normal { filter: none; }
+        .filter-matrix { filter: brightness(1.1) contrast(1.3) hue-rotate(90deg) sepia(1) saturate(5); }
+        .filter-cyberpunk { filter: contrast(1.4) saturate(2) hue-rotate(-30deg) brightness(1.1); }
+        .filter-crt { filter: contrast(1.2) sepia(0.4) saturate(1.8) hue-rotate(180deg); }
+    </style>
+</head>
+<body class="font-sans min-h-screen flex flex-col justify-between selection:bg-cyber-neonPink selection:text-white">
+
+    <header class="w-full border-b border-gray-800 glass-panel sticky top-0 px-4 py-3 z-20">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyber-neonBlue to-cyber-neonPink p-0.5">
+                    <div class="w-full h-full bg-slate-950 rounded-[7px] flex items-center justify-center">
+                        <i class="fa-solid fa-terminal text-cyber-neonBlue text-xl"></i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black font-mono tracking-wider text-white">
+                        TECH<span class="text-cyber-neonBlue">alanay Event Hub</span>
+                    </h1>
+                </div>
+            </div>
+
+            <nav class="flex gap-2 bg-slate-900/80 p-1.5 rounded-xl border border-gray-800">
+                <button onclick="switchTab('trivia')" id="tab-trivia" class="nav-tab px-4 py-2 rounded-lg text-sm font-medium text-cyber-neonBlue bg-cyber-neonBlue/10 border border-cyber-neonBlue/30 transition">
+                    <i class="fa-solid fa-brain mr-1.5"></i> Trivia Quiz
+                </button>
+                <button onclick="switchTab('photobooth')" id="tab-photobooth" class="nav-tab px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition">
+                    <i class="fa-solid fa-camera mr-1.5"></i> Photo Booth
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto w-full p-4 md:p-6 flex-grow">
+        <section id="module-trivia" class="tab-content block space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 glass-panel rounded-2xl p-6 relative flex flex-col justify-between min-h-[440px]">
+                    <div id="triviaNameScreen" class="absolute inset-0 bg-slate-950/95 backdrop-blur z-10 flex flex-col items-center justify-center p-6 text-center space-y-4">
+                        <i class="fa-solid fa-user-astronaut text-5xl text-cyber-neonBlue"></i>
+                        <h3 class="text-2xl font-black text-white font-mono">Enter Player Name</h3>
+                        <p class="text-xs text-gray-400 font-mono max-w-xs">Type your name or group name to start the quiz and record your high score.</p>
+                        <input type="text" id="playerNameInput" placeholder="Your Name or Alias here" class="w-full max-w-xs bg-slate-900 border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-cyber-neonBlue text-center">
+                        <button onclick="startTriviaQuiz()" class="px-6 py-2.5 rounded-xl bg-cyber-neonBlue text-slate-950 font-bold hover:bg-cyan-300 transition font-mono text-sm">
+                            START QUIZ <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between pb-4 border-b border-gray-800 font-mono">
+                        <div>
+                            <span class="text-xs uppercase text-cyber-neonBlue tracking-widest">Assessment Module</span>
+                            <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-microchip text-cyber-neonPink mr-2"></i> Tech Trivia</h2>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-gray-400 block">SCORE</span>
+                            <span id="triviaScore" class="text-2xl font-black text-cyber-neonGreen">0</span>
+                        </div>
+                    </div>
+
+                    <div class="my-6 space-y-4 font-mono">
+                        <div class="flex justify-between text-xs text-gray-400">
+                            <span id="triviaCategory" class="px-2.5 py-1 rounded bg-slate-800 text-cyber-neonBlue">Category: DevOps</span>
+                            <span id="triviaProgress">Question 1/5</span>
+                        </div>
+                        <h3 id="triviaQuestion" class="text-lg md:text-xl font-semibold text-white">Loading question...</h3>
+                        <div id="triviaOptions" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                    </div>
+
+                    <div id="triviaFeedback" class="hidden p-3 rounded-xl font-mono text-sm flex items-center justify-between border">
+                        <span id="triviaFeedbackText">Correct!</span>
+                        <button onclick="nextTriviaQuestion()" class="px-4 py-1.5 bg-white text-black font-bold rounded hover:bg-gray-200 text-xs uppercase">Next <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                    </div>
+
+                    <div id="triviaCompleteScreen" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur flex flex-col items-center justify-center p-6 text-center space-y-4">
+                        <i class="fa-solid fa-trophy text-6xl text-cyber-neonYellow"></i>
+                        <h3 class="text-3xl font-black text-white">Quiz Completed!</h3>
+                        <p class="text-gray-300 font-mono">Final Score: <span id="finalTriviaScore" class="text-cyber-neonGreen font-bold text-2xl">0</span></p>
+                        <button onclick="restartTrivia()" class="px-6 py-2.5 rounded-xl bg-cyber-neonBlue text-slate-950 font-bold hover:bg-cyan-300 transition">Try Again</button>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-6 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-white mb-3 font-mono"><i class="fa-solid fa-list-ol text-cyber-neonBlue mr-2"></i> Leaderboard</h3>
+                        <ul id="triviaLeaderboard" class="space-y-2 font-mono text-sm"></ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="module-photobooth" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 glass-panel rounded-2xl p-6 flex flex-col items-center justify-between relative min-h-[440px]">
+                    <div class="w-full flex justify-between items-center pb-4 border-b border-gray-800 font-mono">
+                        <div>
+                            <span class="text-xs uppercase text-cyber-neonGreen tracking-widest">Web API Integration</span>
+                            <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-camera text-cyber-neonBlue mr-2"></i> MediaDevices Photo Booth</h2>
+                        </div>
+                        <button onclick="initWebcam()" class="text-xs px-3 py-1.5 rounded bg-slate-800 border border-gray-700 text-gray-300 hover:text-white">Reset Cam</button>
+                    </div>
+
+                    <div class="relative w-full max-w-lg aspect-video bg-black rounded-xl overflow-hidden border-2 border-gray-800 my-4 flex items-center justify-center">
+                        <video id="webcamVideo" autoplay playsinline class="w-full h-full object-cover filter-normal"></video>
+                        <canvas id="photoCanvas" class="hidden w-full h-full object-cover"></canvas>
+                        
+                        <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 font-mono">
+                            <span class="bg-cyber-neonPink/80 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase self-start">IT CONF 2026</span>
+                            <p id="stickerCustomText" class="text-cyber-neonBlue text-xl font-black text-center drop-shadow">HELLO WORLD!</p>
+                            <span class="text-[10px] text-gray-400 self-end">WEBCAM API ACTIVE</span>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button id="snapBtn" onclick="takeSnapshot()" class="px-6 py-2.5 rounded-xl bg-cyber-neonGreen text-slate-950 font-black hover:bg-emerald-300 transition">Snap Photo</button>
+                        <button id="downloadBtn" onclick="downloadPhoto()" class="hidden px-6 py-2.5 rounded-xl bg-cyber-neonBlue text-slate-950 font-black hover:bg-cyan-300 transition">Save Image</button>
+                        <button id="retakeBtn" onclick="retakePhoto()" class="hidden px-4 py-2.5 rounded-xl bg-slate-800 text-gray-300 hover:text-white">Retake</button>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-6 space-y-6">
+                    <div>
+                        <h3 class="text-sm font-bold text-white mb-3 font-mono"><i class="fa-solid fa-wand-magic-sparkles text-cyber-neonPurple mr-2"></i> CSS Filters</h3>
+                        <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+                            <button onclick="setCameraFilter('filter-normal')" class="p-2 rounded bg-slate-900 border border-gray-800 text-gray-300 text-left">Standard</button>
+                            <button onclick="setCameraFilter('filter-cyberpunk')" class="p-2 rounded bg-slate-900 border border-gray-800 text-cyber-neonPink text-left">Cyberpunk</button>
+                            <button onclick="setCameraFilter('filter-matrix')" class="p-2 rounded bg-slate-900 border border-gray-800 text-cyber-neonGreen text-left">Matrix</button>
+                            <button onclick="setCameraFilter('filter-crt')" class="p-2 rounded bg-slate-900 border border-gray-800 text-cyber-neonYellow text-left">Retro CRT</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-white mb-2 font-mono"><i class="fa-solid fa-tag text-cyber-neonBlue mr-2"></i> Custom Badge Text</h3>
+                        <input type="text" id="stickerInput" oninput="updateStickerText(this.value)" value="HELLO WORLD!" class="w-full bg-slate-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyber-neonBlue">
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="w-full border-t border-gray-800 glass-panel py-3 px-4 text-center text-xs font-mono text-gray-500">
+         IT TECHalanay HUB • HCI + Platform Tech Capstone © 2026
+    </footer>
+
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.className = 'nav-tab px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition';
+            });
+            document.getElementById(`module-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).className = 'nav-tab px-4 py-2 rounded-lg text-sm font-medium text-cyber-neonBlue bg-cyber-neonBlue/10 border border-cyber-neonBlue/30 transition';
+            if (tabId === 'photobooth') initWebcam();
+        }
+
+        const triviaData = [
+            { q: "What does HTTP status code 418 represent?", cat: "Web Standards", options: ["Unprocessable Entity", "I'm a teapot", "Gateway Timeout", "Bad Request"], correct: 1 },
+            { q: "Which command stages modifications without committing?", cat: "Git", options: ["git checkout", "git stash", "git add", "git reset"], correct: 2 },
+            { q: "What is the time complexity of searching in a balanced BST?", cat: "Algorithms", options: ["O(1)", "O(n)", "O(log n)", "O(n^2)"], correct: 2 },
+            { q: "Which modern JavaScript feature allows optional chaining?", cat: "JavaScript", options: ["??", "!!", "?.", "::"], correct: 2 },
+            { q: "What does API stand for in software development?", cat: "Architecture", options: ["Application Programming Interface", "Advanced Program Integration", "Automated Protocol Interaction", "Application Process Integration"], correct: 0 }
+        ];
+        
+        let currentTriviaIdx = 0, triviaScore = 0, triviaStreak = 0;
+        let currentPlayerName = "Guest Player";
+        let triviaLeaderboard = [{name: "Guest", score: 500},{name: "2nd Guest", score: 275}];
+
+        function startTriviaQuiz() {
+            const input = document.getElementById('playerNameInput');
+            if (input.value.trim() !== "") {
+                currentPlayerName = input.value.trim();
+            }
+            document.getElementById('triviaNameScreen').classList.add('hidden');
+            loadTriviaQuestion();
+        }
+
+        function loadTriviaQuestion() {
+            const q = triviaData[currentTriviaIdx];
+            document.getElementById('triviaCategory').innerText = `Category: ${q.cat}`;
+            document.getElementById('triviaProgress').innerText = `Question ${currentTriviaIdx + 1}/${triviaData.length}`;
+            document.getElementById('triviaQuestion').innerText = q.q;
+            const container = document.getElementById('triviaOptions');
+            container.innerHTML = '';
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "p-3 rounded-xl bg-slate-900 border border-gray-800 hover:border-cyber-neonBlue text-left text-sm font-mono text-gray-200 transition flex items-center gap-2";
+                btn.innerHTML = `<span class="w-6 h-6 rounded bg-slate-800 text-cyber-neonBlue text-xs font-bold flex items-center justify-center">${String.fromCharCode(65 + idx)}</span> ${opt}`;
+                btn.onclick = () => handleTriviaAnswer(idx);
+                container.appendChild(btn);
+            });
+            document.getElementById('triviaFeedback').classList.add('hidden');
+        }
+
+        function handleTriviaAnswer(selectedIdx) {
+            const q = triviaData[currentTriviaIdx];
+            const buttons = document.getElementById('triviaOptions').querySelectorAll('button');
+            buttons.forEach(b => b.disabled = true);
+            const feedback = document.getElementById('triviaFeedback');
+            const feedbackText = document.getElementById('triviaFeedbackText');
+
+            if (selectedIdx === q.correct) {
+                triviaStreak++;
+                triviaScore += 100 + (triviaStreak * 25);
+                buttons[selectedIdx].className = "p-3 rounded-xl bg-emerald-500/20 border-2 border-emerald-400 text-left text-sm font-mono text-emerald-300 flex items-center gap-2";
+                feedback.className = "p-3 rounded-xl font-mono text-sm flex items-center justify-between bg-emerald-500/10 border border-emerald-500/40 text-emerald-400";
+                feedbackText.innerText = `Correct! +pts`;
+            } else {
+                triviaStreak = 0;
+                buttons[selectedIdx].className = "p-3 rounded-xl bg-rose-500/20 border-2 border-rose-500 text-left text-sm font-mono text-rose-300 flex items-center gap-2";
+                buttons[q.correct].className = "p-3 rounded-xl bg-emerald-500/20 border-2 border-emerald-400 text-left text-sm font-mono text-emerald-300 flex items-center gap-2";
+                feedback.className = "p-3 rounded-xl font-mono text-sm flex items-center justify-between bg-rose-500/10 border border-rose-500/40 text-rose-400";
+                feedbackText.innerText = `Incorrect answer.`;
+            }
+            document.getElementById('triviaScore').innerText = triviaScore;
+            feedback.classList.remove('hidden');
+        }
+
+        function nextTriviaQuestion() {
+            currentTriviaIdx++;
+            if (currentTriviaIdx < triviaData.length) {
+                loadTriviaQuestion();
+            } else {
+                document.getElementById('finalTriviaScore').innerText = triviaScore;
+                document.getElementById('triviaCompleteScreen').classList.remove('hidden');
+                
+                triviaLeaderboard.push({ name: currentPlayerName, score: triviaScore });
+                triviaLeaderboard.sort((a, b) => b.score - a.score);
+                renderLeaderboard();
+
+                confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+            }
+        }
+
+        function restartTrivia() {
+            currentTriviaIdx = 0; triviaScore = 0; triviaStreak = 0;
+            document.getElementById('triviaScore').innerText = triviaScore;
+            document.getElementById('triviaCompleteScreen').classList.add('hidden');
+            document.getElementById('triviaNameScreen').classList.remove('hidden');
+            document.getElementById('playerNameInput').value = '';
+        }
+
+        function renderLeaderboard() {
+            const list = document.getElementById('triviaLeaderboard');
+            list.innerHTML = triviaLeaderboard.slice(0, 5).map((item, i) => `
+                <li class="flex justify-between p-2 rounded bg-slate-900 border border-gray-800">
+                    <span class="text-gray-300">#${i+1} ${item.name}</span>
+                    <span class="text-cyber-neonGreen font-bold">${item.score} pts</span>
+                </li>
+            `).join('');
+        }
+
+        let mediaStream = null;
+        async function initWebcam() {
+            const video = document.getElementById('webcamVideo');
+            const canvas = document.getElementById('photoCanvas');
+            canvas.classList.add('hidden');
+            video.classList.remove('hidden');
+            try {
+                if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                video.srcObject = mediaStream;
+            } catch (err) {
+                console.warn("Webcam access unavailable.");
+            }
+        }
+
+        function setCameraFilter(filterName) {
+            document.getElementById('webcamVideo').className = `w-full h-full object-cover ${filterName}`;
+        }
+
+        function updateStickerText(val) {
+            document.getElementById('stickerCustomText').innerText = val || '';
+        }
+
+        function takeSnapshot() {
+            const video = document.getElementById('webcamVideo');
+            const canvas = document.getElementById('photoCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 360;
+            ctx.filter = getComputedStyle(video).filter;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            video.classList.add('hidden');
+            canvas.classList.remove('hidden');
+            document.getElementById('snapBtn').classList.add('hidden');
+            document.getElementById('downloadBtn').classList.remove('hidden');
+            document.getElementById('retakeBtn').classList.remove('hidden');
+        }
+
+        function retakePhoto() {
+            document.getElementById('photoCanvas').classList.add('hidden');
+            document.getElementById('webcamVideo').classList.remove('hidden');
+            document.getElementById('snapBtn').classList.remove('hidden');
+            document.getElementById('downloadBtn').classList.add('hidden');
+            document.getElementById('retakeBtn').classList.add('hidden');
+        }
+
+        function downloadPhoto() {
+            const canvas = document.getElementById('photoCanvas');
+            const link = document.createElement('a');
+            link.download = `snapshot-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        window.onload = function() {
+            renderLeaderboard();
+        };
+    </script>
+</body>
+</html>
